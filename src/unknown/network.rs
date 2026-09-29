@@ -2,6 +2,7 @@
 
 use crate::{Error, InterfaceOperationalState, IpNetwork, MacAddr, NetworkData};
 
+use crate::common::network::LinkSpeed;
 use std::collections::HashMap;
 use std::ffi::OsString;
 
@@ -84,12 +85,12 @@ impl NetworkDataInner {
         0
     }
 
-    pub(crate) fn transmit_link_speed(&self) -> Option<u64> {
-        None
+    pub(crate) fn transmit_link_speed(&self) -> LinkSpeed {
+        LinkSpeed::Unsupported
     }
 
-    pub(crate) fn receive_link_speed(&self) -> Option<u64> {
-        None
+    pub(crate) fn receive_link_speed(&self) -> LinkSpeed {
+        LinkSpeed::Unsupported
     }
 
     pub(crate) fn operational_state(&self) -> InterfaceOperationalState {

@@ -425,6 +425,8 @@ impl NetworkData {
         self.inner.mtu()
     }
 
+    //  TODO update docs
+    //  TODO change fix Linux, Windows and BSD
     /// Returns the transmit link speed of the interface in bits per second.
     ///
     /// For Ethernet interfaces, this is the negotiated link speed.
@@ -450,10 +452,12 @@ impl NetworkData {
     ///     }
     /// }
     /// ```
-    pub fn transmit_link_speed(&self) -> Option<u64> {
-        self.inner.transmit_link_speed()
+    pub fn transmit_link_speed(&self) -> Result<u64, Error> {
+        self.inner.transmit_link_speed().into_result()
     }
 
+    //  TODO update docs
+    //  TODO change fix Linux, Windows and BSD
     /// Returns the receive link speed of the interface in bits per second.
     ///
     /// For Ethernet interfaces, this is the negotiated link speed.
@@ -479,8 +483,8 @@ impl NetworkData {
     ///     }
     /// }
     /// ```
-    pub fn receive_link_speed(&self) -> Option<u64> {
-        self.inner.receive_link_speed()
+    pub fn receive_link_speed(&self) -> Result<u64, Error> {
+        self.inner.receive_link_speed().into_result()
     }
 
     /// Returns the operational state of the interface.
@@ -739,6 +743,23 @@ impl fmt::Display for InterfaceOperationalState {
             InterfaceOperationalState::NotPresent => "notpresent",
             InterfaceOperationalState::LowerLayerDown => "lowerlayerdown",
         })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LinkSpeed {
+    Value(u64),
+    CannotCompute,
+    Unsupported,
+}
+
+impl LinkSpeed {
+    pub(crate) fn into_result(self) -> Result<u64, Error> {
+        match self {
+            Self::Value(v) => Ok(v),
+            Self::CannotCompute => Err(Error::Other("Cannot compute".into())),
+            Self::Unsupported => Err(Error::Unsupported),
+        }
     }
 }
 

@@ -5,14 +5,16 @@ use libc::{
     c_int, c_uint, if_data64, if_msghdr2, sysctl,
 };
 
+use crate::common::network::LinkSpeed;
+use crate::network::refresh_networks_addresses;
+use crate::{Error, InterfaceOperationalState, IpNetwork, MacAddr, NetworkData};
+use objc2_core_foundation::CFStringCompareFlags;
+use objc2_system_configuration::{SCNetworkInterface, kSCNetworkInterfaceTypeVLAN};
 use std::collections::{HashMap, hash_map};
 use std::ffi::OsString;
 use std::mem::{MaybeUninit, size_of};
 use std::os::unix::ffi::OsStringExt;
 use std::ptr::null_mut;
-
-use crate::network::refresh_networks_addresses;
-use crate::{Error, InterfaceOperationalState, IpNetwork, MacAddr, NetworkData};
 
 // FIXME: To be removed once https://github.com/rust-lang/libc/pull/4022 is merged and released.
 #[repr(C)]
@@ -145,6 +147,9 @@ impl NetworksInner {
             let lim = buf.add(len);
             let mut next = buf;
 
+            let interfaces = SCNetworkInterface::all();
+            let interfaces_cast = interfaces.cast_unchecked::<SCNetworkInterface>();
+
             while next < lim {
                 let ifm = next as *const libc::if_msghdr;
                 next = next.offset((*ifm).ifm_msglen as isize);
@@ -165,8 +170,39 @@ impl NetworksInner {
                     let name = OsString::from_vec(name);
                     let mtu = (*if2m).ifm_data.ifi_mtu as u64;
 
-                    //  Definition of `0` value for `ifi_baudrate` is not explicitly mentioned in XNU docs
-                    let link_speed = Some((*if2m).ifm_data.ifi_baudrate);
+                    let baudrate = (*if2m).ifm_data.ifi_baudrate;
+
+                    let link_speed = if baudrate != 0 {
+                        LinkSpeed::Value(baudrate)
+                    } else {
+                        let name_string = name.to_str().map(|v| v.to_string());
+
+                        //  If interface is found in `SCNetworkInterface::all()`, this interface is network-capable
+                        let interface = interfaces_cast.iter().find(|interface| {
+                            interface
+                                .bsd_name()
+                                .map(|interface_name| interface_name.to_string())
+                                == name_string
+                        });
+
+                        match interface {
+                            Some(interface) => match interface.interface_type() {
+                                Some(interface_type)
+                                    if interface_type
+                                        .compare(
+                                            Some(kSCNetworkInterfaceTypeVLAN),
+                                            CFStringCompareFlags::empty(),
+                                        )
+                                        .0
+                                        == 0 =>
+                                {
+                                    LinkSpeed::CannotCompute
+                                }
+                                _ => LinkSpeed::Value(0),
+                            },
+                            None => LinkSpeed::CannotCompute,
+                        }
+                    };
 
                     // FIXME: the documentation I could find was rather spars and unclear, are these the right flags?
                     let operational_state =
@@ -283,7 +319,6 @@ impl InterfaceOperationalState {
     }
 }
 
-#[derive(PartialEq, Eq)]
 pub(crate) struct NetworkDataInner {
     current_in: u64,
     old_in: u64,
@@ -305,7 +340,7 @@ pub(crate) struct NetworkDataInner {
     /// Interface Maximum Transfer Unit (MTU)
     mtu: u64,
     /// Link speed in bits per second
-    link_speed: Option<u64>,
+    link_speed: LinkSpeed,
     operational_state: InterfaceOperationalState,
 }
 
@@ -370,11 +405,11 @@ impl NetworkDataInner {
         self.mtu
     }
 
-    pub(crate) fn transmit_link_speed(&self) -> Option<u64> {
+    pub(crate) fn transmit_link_speed(&self) -> LinkSpeed {
         self.link_speed
     }
 
-    pub(crate) fn receive_link_speed(&self) -> Option<u64> {
+    pub(crate) fn receive_link_speed(&self) -> LinkSpeed {
         self.link_speed
     }
 

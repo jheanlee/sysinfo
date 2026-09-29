@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
+use crate::common::network::LinkSpeed;
 use crate::network::refresh_networks_addresses;
 use crate::{Error, InterfaceOperationalState, IpNetwork, MacAddr, NetworkData};
 
@@ -324,12 +325,12 @@ impl NetworkDataInner {
         self.mtu
     }
 
-    pub(crate) fn transmit_link_speed(&self) -> Option<u64> {
-        self.link_speed.map(|v| v * 1_000_000)
+    pub(crate) fn transmit_link_speed(&self) -> LinkSpeed {
+        todo!()
     }
 
-    pub(crate) fn receive_link_speed(&self) -> Option<u64> {
-        self.link_speed.map(|v| v * 1_000_000)
+    pub(crate) fn receive_link_speed(&self) -> LinkSpeed {
+        todo!()
     }
 
     pub(crate) fn operational_state(&self) -> InterfaceOperationalState {

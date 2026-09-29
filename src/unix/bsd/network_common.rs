@@ -1,5 +1,6 @@
 // Take a look at the license at the top of the repository in the LICENSE file.
 
+use crate::common::network::LinkSpeed;
 use crate::{InterfaceOperationalState, IpNetwork, MacAddr};
 
 pub(crate) struct NetworkDataInner {
@@ -97,12 +98,12 @@ impl NetworkDataInner {
         self.mtu
     }
 
-    pub(crate) fn transmit_link_speed(&self) -> Option<u64> {
-        self.link_speed
+    pub(crate) fn transmit_link_speed(&self) -> LinkSpeed {
+        todo!()
     }
 
-    pub(crate) fn receive_link_speed(&self) -> Option<u64> {
-        self.link_speed
+    pub(crate) fn receive_link_speed(&self) -> LinkSpeed {
+        todo!()
     }
 
     pub(crate) fn operational_state(&self) -> InterfaceOperationalState {

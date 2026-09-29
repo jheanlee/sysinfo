@@ -102,6 +102,10 @@ network = [
     "windows/Win32_NetworkManagement_IpHelper",
     "windows/Win32_NetworkManagement_Ndis",
     "windows/Win32_Networking_WinSock",
+    "dep:objc2-system-configuration",
+    "objc2-system-configuration/SCNetworkConfiguration",
+    "dep:objc2-core-foundation",
+    "objc2-core-foundation/CFString",
 ]
 user = [
     "dep:windows",
@@ -110,7 +114,7 @@ user = [
     "windows/Win32_Security",
     "windows/Win32_Security_Authentication_Identity",
     "windows/Win32_Security_Authorization",
-    "dep:objc2-core-foundation",    
+    "dep:objc2-core-foundation",
     "objc2-core-foundation/CFString",
     "dep:objc2-open-directory",
 ]
@@ -157,6 +161,7 @@ libc = "^0.2.173"
 objc2-core-foundation = { version = "0.3.2", optional = true, default-features = false, features = [
     "std",
 ] }
+objc2-system-configuration = { version = "0.3.2", optional = true, default-features = false }
 objc2-io-kit = { version = "0.3.2", optional = true, default-features = false, features = [
     "std",
     "libc",
@@ -169,7 +174,7 @@ objc2-io-kit = { version = "0.3.2", optional = true, default-features = false, f
 objc2-open-directory = { version = "0.3.2", optional = true, default-features = false, features = [
     "objc2-core-foundation",
     "std",
-    "CFODNode", 
+    "CFODNode",
     "CFODSession",
     "CFODQuery",
     "CFODRecord",
