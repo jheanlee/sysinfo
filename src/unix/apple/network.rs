@@ -5,7 +5,6 @@ use libc::{
     if_msghdr2, sysctl,
 };
 
-use crate::common::network::LinkSpeed;
 use crate::network::refresh_networks_addresses;
 use crate::{Error, InterfaceOperationalState, IpNetwork, MacAddr, NetworkData};
 use objc2_core_foundation::CFStringCompareFlags;
@@ -154,11 +153,11 @@ impl NetworksInner {
                     let baudrate = (*if2m).ifm_data.ifi_baudrate;
 
                     let link_speed = if baudrate != 0 {
-                        LinkSpeed::Value(baudrate)
+                        Some(baudrate)
                     } else {
                         let name_string = name.to_str().map(|v| v.to_string());
 
-                        //  If interface is found in `SCNetworkInterface::all()`, this interface is network-capable
+                        //  If the interface is found in `SCNetworkInterface::all()`, this interface is network-capable.
                         let interface = interfaces_cast.iter().find(|interface| {
                             interface
                                 .bsd_name()
@@ -167,21 +166,21 @@ impl NetworksInner {
                         });
 
                         match interface {
-                            Some(interface) => match interface.interface_type() {
-                                Some(interface_type)
-                                    if interface_type
+                            Some(interface)
+                                if interface.interface_type().is_some_and(|interface_type| {
+                                    interface_type
                                         .compare(
                                             Some(kSCNetworkInterfaceTypeVLAN),
                                             CFStringCompareFlags::empty(),
                                         )
                                         .0
-                                        == 0 =>
-                                {
-                                    LinkSpeed::CannotCompute
-                                }
-                                _ => LinkSpeed::Value(0),
-                            },
-                            None => LinkSpeed::CannotCompute,
+                                        == 0
+                                }) =>
+                            {
+                                None
+                            }
+                            Some(_) => Some(0),
+                            None => None,
                         }
                     };
 
@@ -300,6 +299,7 @@ impl InterfaceOperationalState {
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub(crate) struct NetworkDataInner {
     current_in: u64,
     old_in: u64,
@@ -321,7 +321,7 @@ pub(crate) struct NetworkDataInner {
     /// Interface Maximum Transfer Unit (MTU)
     mtu: u64,
     /// Link speed in bits per second
-    link_speed: LinkSpeed,
+    link_speed: Option<u64>,
     operational_state: InterfaceOperationalState,
 }
 
@@ -386,11 +386,11 @@ impl NetworkDataInner {
         self.mtu
     }
 
-    pub(crate) fn transmit_link_speed(&self) -> LinkSpeed {
+    pub(crate) fn transmit_link_speed(&self) -> Option<u64> {
         self.link_speed
     }
 
-    pub(crate) fn receive_link_speed(&self) -> LinkSpeed {
+    pub(crate) fn receive_link_speed(&self) -> Option<u64> {
         self.link_speed
     }
 

@@ -425,7 +425,6 @@ impl NetworkData {
         self.inner.mtu()
     }
 
-    //  TODO update docs
     //  TODO change fix Linux, Windows and BSD
     /// Returns the transmit link speed of the interface in bits per second.
     ///
@@ -435,13 +434,8 @@ impl NetworkData {
     ///
     /// Returns the same value as [Self::receive_link_speed] on Unix systems.
     ///
-    /// On Linux, returns `None` when the OS indicates that the link speed is not available.
-    /// On other systems, this value is always `Some`.
-    ///
-    /// Confirmed special, platform-specific cases:
-    /// - Linux: loopback and Wi-Fi interfaces return `None`.
-    /// - macOS: loopback, vlan, fake (feth), redirect and headless interfaces return `Some(0)`.
-    /// - FreeBSD: loopback returns `Some(0)`.
+    /// Returns `None` when the link speed is not available. This can be the case for interfaces
+    /// whose link speed is meaningless or not set by the driver.
     ///
     /// ```no_run
     /// use sysinfo::Networks;
@@ -452,11 +446,10 @@ impl NetworkData {
     ///     }
     /// }
     /// ```
-    pub fn transmit_link_speed(&self) -> Result<u64, Error> {
-        self.inner.transmit_link_speed().into_result()
+    pub fn transmit_link_speed(&self) -> Option<u64> {
+        self.inner.transmit_link_speed()
     }
 
-    //  TODO update docs
     //  TODO change fix Linux, Windows and BSD
     /// Returns the receive link speed of the interface in bits per second.
     ///
@@ -466,13 +459,8 @@ impl NetworkData {
     ///
     /// Returns the same value as [Self::transmit_link_speed] on Unix systems.
     ///
-    /// On Linux, returns `None` when the OS indicates that the link speed is not available.
-    /// On other systems, this value is always `Some`.
-    ///
-    /// Confirmed special, platform-specific cases:
-    /// - Linux: loopback and Wi-Fi interfaces return `None`.
-    /// - macOS: loopback, vlan, fake (feth), redirect and headless interfaces return `Some(0)`.
-    /// - FreeBSD: loopback returns `Some(0)`.
+    /// Returns `None` when the link speed is not available. This can be the case for interfaces
+    /// whose link speed is meaningless or not set by the driver.
     ///
     /// ```no_run
     /// use sysinfo::Networks;
@@ -483,8 +471,8 @@ impl NetworkData {
     ///     }
     /// }
     /// ```
-    pub fn receive_link_speed(&self) -> Result<u64, Error> {
-        self.inner.receive_link_speed().into_result()
+    pub fn receive_link_speed(&self) -> Option<u64> {
+        self.inner.receive_link_speed()
     }
 
     /// Returns the operational state of the interface.
@@ -743,23 +731,6 @@ impl fmt::Display for InterfaceOperationalState {
             InterfaceOperationalState::NotPresent => "notpresent",
             InterfaceOperationalState::LowerLayerDown => "lowerlayerdown",
         })
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum LinkSpeed {
-    Value(u64),
-    CannotCompute,
-    Unsupported,
-}
-
-impl LinkSpeed {
-    pub(crate) fn into_result(self) -> Result<u64, Error> {
-        match self {
-            Self::Value(v) => Ok(v),
-            Self::CannotCompute => Err(Error::Other("Cannot compute".into())),
-            Self::Unsupported => Err(Error::Unsupported),
-        }
     }
 }
 
