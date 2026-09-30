@@ -7,7 +7,6 @@ use std::collections::{HashMap, hash_map};
 use std::ffi::OsString;
 use std::os::windows::ffi::OsStringExt;
 
-use crate::common::network::LinkSpeed;
 use windows::Win32::NetworkManagement::IpHelper::{FreeMibTable, GetIfTable2, MIB_IF_TABLE2};
 use windows::Win32::NetworkManagement::Ndis::{
     IF_OPER_STATUS, IfOperStatusDormant, IfOperStatusDown, IfOperStatusLowerLayerDown,
@@ -99,7 +98,7 @@ impl NetworksInner {
 
                 let mtu = ptr.Mtu as u64;
 
-                //  Definition of `0` value for `TransmitLinkSpeed` and `ReceiveLinkSpeed` is not explicitly mentioned in Windows docs
+                //  Software interfaces are filtered out in earlier checks, so no special handling need.
                 let transmit_link_speed = Some(ptr.TransmitLinkSpeed);
                 let receive_link_speed = Some(ptr.ReceiveLinkSpeed);
 
@@ -267,12 +266,12 @@ impl NetworkDataInner {
         self.mtu
     }
 
-    pub(crate) fn transmit_link_speed(&self) -> LinkSpeed {
-        todo!()
+    pub(crate) fn transmit_link_speed(&self) -> Option<u64> {
+        self.transmit_link_speed
     }
 
-    pub(crate) fn receive_link_speed(&self) -> LinkSpeed {
-        todo!()
+    pub(crate) fn receive_link_speed(&self) -> Option<u64> {
+        self.receive_link_speed
     }
 
     pub(crate) fn operational_state(&self) -> InterfaceOperationalState {
